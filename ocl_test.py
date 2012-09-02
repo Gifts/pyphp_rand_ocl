@@ -7,9 +7,9 @@ import numpy as np
 import numpy.linalg as la
 
 
-SIZE = 98000
+SIZE = 102400*2
 DIVIDER = 1
-STATE_SIZE = 16
+STATE_SIZE = 32*16
 n = 1024
 
 
@@ -18,7 +18,7 @@ MT_N = 624
 M = 397
 ## END PHP rand constants
 
-MT_state_result = np.zeros((SIZE, MT_N)).astype(np.uint32)
+MT_state_result = np.zeros((MT_N, SIZE)).astype(np.uint32)
 
 ctx = cl.create_some_context()
 queue_instruction = cl.CommandQueue(ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
@@ -32,8 +32,8 @@ prg = cl.Program(ctx, """
     #define MT_N {0}
     #define STATES_SIZE {1}
     #define M {2}
-    {3}
-    """.format(MT_N, STATE_SIZE, M, "#define DIVIDED 1" if DIVIDER > 1 else '') +
+    #define ALL_SIZE {3}
+    """.format(MT_N, STATE_SIZE, M, SIZE,"#define DIVIDED 1" if DIVIDER > 1 else '') +
     """
     #define hiBit(u)      ((u) & 0x80000000U)  /* mask all but highest   bit of u */
     #define loBit(u)      ((u) & 0x00000001U)  /* mask all but lowest    bit of u */
@@ -45,44 +45,70 @@ prg = cl.Program(ctx, """
 
     """
 
-    __kernel void sum(unsigned int seed_start,__global unsigned int c[][MT_N])
+    __kernel void mt_brute(unsigned int seed_start,__global unsigned int c[MT_N][ALL_SIZE])
     {
       int gid = get_global_id(0);
       int lid = get_local_id(0);
 
-      __local unsigned state[STATES_SIZE][MT_N];
+      __local unsigned int state[3][STATES_SIZE];
 
 
       /* PHP_MT_VARIABLES*/
-      __private register int i;
+      __private register unsigned int i;
       register unsigned int s1;
-      __local unsigned int *s = state[lid];
-      __local unsigned int *r = state[lid];
 
       __local unsigned int *next;
       /* END PHP_MT_VARIABLES*/
 
 
-      #ifdef DIVIDED
-      register int j;
-      register int group
-      for (j=0; j<)
-      #else
-
-      #endif
       /* PHP_MT_INITIALIZE */
+      //s = state + lid;
+      __private unsigned int s2;
+      __private unsigned int r2;
+      __private unsigned int *pntr;
+
       i = 1;
 
-      *s++ = (seed_start + gid) & 0xffffffffU;
+      //*s++ = (seed_start + gid) & 0xffffffffU;
+      s2 = (seed_start + gid) & 0xffffffffU;
+      r2 = s2;
+      c[0][gid] = s2;
+
       for (; i < MT_N; ++i)
       {
-        *s++ = ( 1812433253U * ( *r ^ (*r >> 30) ) + i ) & 0xffffffffU;
-        r++;
+        s2 = ( 1812433253U * ( r2 ^ (r2 >> 30) ) + i ) & 0xffffffffU;
+        r2 = s2;
+        c[i][gid] = s2;
       }
       /* END PHP_MT_INITIALIZE */
 
 
       /* PHP_MT_RELOAD */
+
+      state[1][lid] = c[0][gid];
+
+      for (i = 0; i < MT_N - M; ++i)
+      {
+        state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
+        state[1][lid] = c[i+1][gid];
+        state[2][lid] = c[i+M][gid];
+        c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+      }
+
+// GOOOOOOOOOOOOOOOOOOD
+//return;
+      //state[1][lid] = c[i+1][gid];
+
+      //state[1][lid] = c[228][gid];
+      for (i = MT_N - M; i < MT_N-1; ++i)
+      {
+        state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
+        state[1][lid] = c[i+1][gid];
+        state[2][lid] = c[i-MT_N+M][gid];
+        c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+      }
+return;
+/*
 
       s = state[lid];
       r = s;
@@ -96,9 +122,11 @@ prg = cl.Program(ctx, """
       *r = twist(r[M-MT_N], r[0], s[0]);
 
       next = s;
+*/
       /* END PHP_MT_RELOAD */
 
       /* PHP_MT_RAND */
+/*
       for (i = 0; i < 8; ++i)
       {
           s1 = *next++;
@@ -108,36 +136,40 @@ prg = cl.Program(ctx, """
           s1 ^= (s1 >> 18);
           state[lid][i] = s1 >> 1;
       }
+*/
       /* END PHP_MT_RAND */
 
-
+/*
       for(i=0; i< MT_N; ++i)
       {
-        c[gid][i] = state[lid][i];
+        c[gid][i] = state[i][lid];
       }
-
-      c[gid][0] = gid;
-      //c[gid][1] = get_local_id(0);
+*/
+      c[gid][0] = gid;//gid*2;
+      c[gid][1] = lid;
+      c[gid][2] = get_local_size(0);
     }
     """).build()
 z = cl.enqueue_marker(queue_instruction)
 
 
-instr_event = prg.sum(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(0), MT_state_buf)#, g_times_l=True)
+instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(0), MT_state_buf)#, g_times_l=True)
 data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_buf, wait_for=[instr_event,])
 
-for i in xrange(10):
-    instr_event = prg.sum(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, wait_for=[data_event,])#, g_times_l=True)
-    data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_buf, wait_for=[instr_event,])
+#for i in xrange(10):
+#    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, wait_for=[data_event,])#, g_times_l=True)
+#    data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_buf, wait_for=[instr_event,])
 
 
 z2 = cl.enqueue_marker(queue_instruction)
-#z2.wait()
+z2.wait()
 #z2 = prg.sum(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(0), MT_state_buf)#, g_times_l=True)
 #cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_buf).wait()
 
 
-print MT_state_result
+#print MT_state_result
+for row in  MT_state_result:
+    print row[0]
 
 print "Start: {0} End: {1} Difference: {2}".format(z.profile.start,z2.profile.end, z2.profile.end - z.profile.start)
 
@@ -150,9 +182,9 @@ MT_state_buf.release()
 exit()
 
 #MT_state_result = np.empty_like(a)
-print MT_state_result
-#for row in  MT_state_result:
-#    print row
+#print MT_state_result
+for row in  MT_state_result:
+    print row[0]
 #print la.norm(MT_state_result - (a+b))
 exit()
 
