@@ -9,7 +9,7 @@ import numpy.linalg as la
 
 SIZE = 102400*2
 DIVIDER = 1
-STATE_SIZE = 32*16
+STATE_SIZE = 32*32
 n = 1024
 
 
@@ -57,7 +57,7 @@ prg = cl.Program(ctx, """
       __private register unsigned int i;
       register unsigned int s1;
 
-      __local unsigned int *next;
+      //__local unsigned int *next;
       /* END PHP_MT_VARIABLES*/
 
 
@@ -65,7 +65,6 @@ prg = cl.Program(ctx, """
       //s = state + lid;
       __private unsigned int s2;
       __private unsigned int r2;
-      __private unsigned int *pntr;
 
       i = 1;
 
@@ -95,11 +94,6 @@ prg = cl.Program(ctx, """
         c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
       }
 
-// GOOOOOOOOOOOOOOOOOOD
-//return;
-      //state[1][lid] = c[i+1][gid];
-
-      //state[1][lid] = c[228][gid];
       for (i = MT_N - M; i < MT_N-1; ++i)
       {
         state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
@@ -107,7 +101,11 @@ prg = cl.Program(ctx, """
         state[2][lid] = c[i-MT_N+M][gid];
         c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
       }
-return;
+      state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
+      state[1][lid] = c[0][gid];
+      state[2][lid] = c[i-MT_N+M][gid];
+      c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+      return;
 /*
 
       s = state[lid];
@@ -129,12 +127,12 @@ return;
 /*
       for (i = 0; i < 8; ++i)
       {
-          s1 = *next++;
+          s1 = c[i][gid];
           s1 ^= (s1 >> 11);
           s1 ^= (s1 <<  7) & 0x9d2c5680U;
           s1 ^= (s1 << 15) & 0xefc60000U;
           s1 ^= (s1 >> 18);
-          state[lid][i] = s1 >> 1;
+          c[i][gid] = s1 >> 1;
       }
 */
       /* END PHP_MT_RAND */
@@ -145,9 +143,10 @@ return;
         c[gid][i] = state[i][lid];
       }
 */
-      c[gid][0] = gid;//gid*2;
-      c[gid][1] = lid;
-      c[gid][2] = get_local_size(0);
+
+      c[0][gid] = gid;//gid*2;
+      c[1][gid] = lid;
+      return;
     }
     """).build()
 z = cl.enqueue_marker(queue_instruction)
