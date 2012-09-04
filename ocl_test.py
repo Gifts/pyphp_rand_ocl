@@ -47,19 +47,19 @@ prg = cl.Program(ctx, """
 
     __kernel void mt_brute(
         unsigned int seed_start,
-        __global unsigned int c[MT_N][ALL_SIZE],
-        __global unsigned int res[8][ALL_SIZE]
+        __global unsigned int *c, //c[MT_N][ALL_SIZE], //
+        __global unsigned int *res
     )
     {
-      int gid = get_global_id(0);
-      int lid = get_local_id(0);
+      __private int gid = get_global_id(0);
+      __private int lid = get_local_id(0);
 
-      __local unsigned int state[3][STATES_SIZE];
+      __local unsigned int state[3*STATES_SIZE];
 
 
       /* PHP_MT_VARIABLES*/
-      __private register unsigned int i;
-      __private register unsigned int s1;
+      __private unsigned int i;
+      __private unsigned int s1;
 
       //__local unsigned int *next;
       /* END PHP_MT_VARIABLES*/
@@ -75,53 +75,54 @@ prg = cl.Program(ctx, """
       //*s++ = (seed_start + gid) & 0xffffffffU;
       s2 = (seed_start + gid) & 0xffffffffU;
       r2 = s2;
-      c[0][gid] = s2;
+      c[gid] = s2;
 
       for (; i < MT_N; ++i)
       {
         s2 = ( 1812433253U * ( r2 ^ (r2 >> 30) ) + i ) & 0xffffffffU;
         r2 = s2;
-        c[i][gid] = s2;
+        c[ALL_SIZE*i + gid] = s2;
       }
       /* END PHP_MT_INITIALIZE */
 
 
       /* PHP_MT_RELOAD */
 
-      state[1][lid] = c[0][gid];
+      state[STATES_SIZE + lid] = c[gid];
 
       for (i = 0; i < MT_N - M; ++i)
       {
-        state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
-        state[1][lid] = c[i+1][gid];
-        state[2][lid] = c[i+M][gid];
-        c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+        state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
+        state[STATES_SIZE   + lid] = c[(i+1) * ALL_SIZE + gid];
+        state[2*STATES_SIZE + lid] = c[(i+M) * ALL_SIZE + gid];
+        c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
       }
       r2 = MT_N - M;
       for (i = MT_N - M; i < MT_N-1; ++i)
       {
-        state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
-        state[1][lid] = c[i+1][gid];
-        state[2][lid] = c[i-r2][gid];
-        c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+        state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
+        state[STATES_SIZE   + lid] = c[(i+1) * ALL_SIZE + gid];
+        state[STATES_SIZE*2 + lid] = c[(i-r2) * ALL_SIZE + gid];
+        c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
       }
-      state[0][lid] = state[1][lid];  // +++ p[0] = c[0][gid]
-      state[1][lid] = c[0][gid];
-      state[2][lid] = c[i-r2][gid];
-      c[i][gid] = twist(state[2][lid], state[0][lid], state[1][lid]);
+      state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
+      state[STATES_SIZE   + lid] = c[gid];
+      state[STATES_SIZE*2 + lid] = c[(i-r2) * ALL_SIZE + gid];
+      c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
+
       /* END PHP_MT_RELOAD */
 
       /* PHP_MT_RAND */
 
       for (i = 0; i < 8; ++i)
       {
-          s1 = c[i][gid];
+          s1 = c[ALL_SIZE*i + gid];
 
           s1 ^= (s1 >> 11);
           s1 ^= (s1 <<  7) & 0x9d2c5680U;
           s1 ^= (s1 << 15) & 0xefc60000U;
           s1 ^= (s1 >> 18);
-          res[i][gid] = (long)(s1 >> 1);
+          res[ALL_SIZE*i + gid] = (long)(s1 >> 1);
       }
       /* END PHP_MT_RAND */
 
@@ -135,7 +136,7 @@ instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint3
 data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
 for i in xrange(10):
-    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
+    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE*0), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
     data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
 
