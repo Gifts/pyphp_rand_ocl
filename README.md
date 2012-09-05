@@ -44,3 +44,5 @@ $ tail -n 2 cuda_profile_0.log<br>
 method=[ mt_brute ] gputime=[ 28348.801 ] cputime=[ 5.000 ] occupancy=[ 1.000 ] <br>
 method=[ memcpyDtoHasync ] gputime=[ 1364.960 ] cputime=[ 1503.000 ] <br>
 </code>
+
+28348.801+1364.960 microseconds for 2^18 hashes = 8.8 * 10^6 seeds
