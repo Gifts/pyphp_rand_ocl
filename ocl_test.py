@@ -5,11 +5,11 @@ import pyopencl.array as cl_array
 
 import numpy as np
 import numpy.linalg as la
+import time
 
-
-SIZE = 102400*2
+SIZE = (2**18)
 DIVIDER = 1
-STATE_SIZE = 32*16
+STATE_SIZE = (2**8)
 
 
 ## PHP rand constants
@@ -131,13 +131,13 @@ prg = cl.Program(ctx, """
     """).build()
 z = cl.enqueue_marker(queue_instruction)
 
-
+zzz = time.time()
 instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(0), MT_state_buf, MT_state_res_buf)#, g_times_l=True)
-data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
+data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
 for i in xrange(10):
     instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE*0), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
-    data_event = cl.enqueue_copy(queue_data, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
+    data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
 
 z2 = cl.enqueue_marker(queue_instruction)
