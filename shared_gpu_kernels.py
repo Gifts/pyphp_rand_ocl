@@ -31,7 +31,7 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
       /* PHP_MT_VARIABLES*/
 
       __private unsigned int i;
-      __private unsigned int s2;
+      __private unsigned int s2, r2;
       __private unsigned int x;
 
       /* END PHP_MT_VARIABLES*/
@@ -41,7 +41,7 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
 
       s2 = (seed_start + gid) & 0xffffffffU;
 
-      x = 1812433253U * (s2 ^ (s2 >> 30)) + 1;
+      r2 = x = 1812433253U * (s2 ^ (s2 >> 30)) + 1;
       for (i = 2; i <= M; i++)
       x = 1812433253U * (x ^ (x >> 30)) + i;
 
