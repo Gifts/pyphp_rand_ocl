@@ -34,15 +34,25 @@ If you would run it from shell - there would be some info regarding this
 Speed tests
 ===========
 
-<code>$ ./start_ocl.sh<br>
+<code>$ grep SIZE config.py
+SIZE = (2**14)
+STATE_SIZE = (2**7)
+$ ./start_ocl.sh<br>
 $ tail -n 2 opencl_profile_0.log<br>
-method=[ mt_brute ] gputime=[ 28462.783 ] cputime=[ 5.000 ] occupancy=[ 0.833 ]<br>
-method=[ memcpyDtoHasync ] gputime=[ 2061.664 ] cputime=[ 34.000 ]<br>
+method=[ mt_brute ] gputime=[ 72.640 ] cputime=[ 4.000 ] occupancy=[ 0.667 ] <br>
+method=[ memcpyDtoHasync ] gputime=[ 12.512 ] cputime=[ 8.000 ] <br>
 <br>
 $ ./start_cuda.sh<br>
 $ tail -n 2 cuda_profile_0.log<br>
-method=[ mt_brute ] gputime=[ 28348.801 ] cputime=[ 5.000 ] occupancy=[ 1.000 ] <br>
-method=[ memcpyDtoHasync ] gputime=[ 1364.960 ] cputime=[ 1503.000 ] <br>
+method=[ mt_brute ] gputime=[ 68.928 ] cputime=[ 6.000 ] occupancy=[ 0.667 ] <br>
+method=[ memcpyDtoH ] gputime=[ 10.720 ] cputime=[ 88.000 ] <br>
 </code>
 
-28348.801+1364.960 microseconds for 2^18 hashes = 8.8 * 10^6 seeds
+Results
+=======
+
+72.640+12.51 microseconds for 2^14 hashes = 1.9 * 10^8 seeds
+
+OR
+
+22 seconds for all 2^32 combinations
