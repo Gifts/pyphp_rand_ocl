@@ -9,7 +9,7 @@ import time
 
 from shared_gpu_kernels import gen_kernel, transform_to_cuda
 
-from config import SIGNIFICANT_LENGTH, SIZE, MT_N, M, STATE_SIZE
+from config import SIGNIFICANT_LENGTH, SIZE, MT_N, M, STATE_SIZE, TEST_ITERATIONS
 
 
 MT_state_result = np.zeros((SIGNIFICANT_LENGTH, SIZE)).astype(np.uint32)
@@ -32,21 +32,15 @@ zzz = time.time()
 ev = prog(np.uint32(0), MT_state_buf, MT_state_res_buf, block=(STATE_SIZE, 1, 1), grid=(SIZE/STATE_SIZE, 1), stream=Stream)
 drv.memcpy_dtoh_async(MT_state_result, MT_state_res_buf, stream=Stream2)
 
-for i in xrange(10):
+for i in xrange(TEST_ITERATIONS):
     prog(np.uint32(i*SIZE), MT_state_buf, MT_state_res_buf, block=(STATE_SIZE, 1, 1), grid=(SIZE/STATE_SIZE, 1), stream=Stream)
-    drv.memcpy_dtoh_async(MT_state_result, MT_state_res_buf, stream=Stream2)
-
-
-
-
-
-print MT_state_result
+    drv.memcpy_dtoh(MT_state_result, MT_state_res_buf)#, stream=Stream2)
 
 zzz = time.time() - zzz
-print zzz
+print '>>>', zzz
 
-for row in MT_state_result:
-    print row[0]
+for row in MT_state_result[0]:
+    print row
 
 
 

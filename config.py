@@ -7,6 +7,7 @@ DIVIDER = 1
 STATE_SIZE = (2**7)
 SIGNIFICANT_LENGTH = 1
 
+TEST_ITERATIONS = 20
 
 ## PHP rand constants
 MT_N = 624
