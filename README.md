@@ -34,9 +34,8 @@ If you would run it from shell - there would be some info regarding this
 Speed tests
 ===========
 
-<code>$ grep SIZE config.py
-SIZE = (2**14)
-STATE_SIZE = (2**7)
+<code>$ grep SIZE config.py<br>
+SIZE = 16384<br>
 $ ./start_ocl.sh<br>
 $ tail -n 2 opencl_profile_0.log<br>
 method=[ mt_brute ] gputime=[ 72.640 ] cputime=[ 4.000 ] occupancy=[ 0.667 ] <br>
