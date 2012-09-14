@@ -30,7 +30,6 @@ for i in xrange(TEST_ITERATIONS):#2**31 / SIZE):
     instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
     data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
     data_event.wait()
-    print '>>', MT_state_result
         #for row in (tmp for tmp in MT_state_result[0]):
         #    f.write('{0}\n'.format(row))
 
