@@ -25,7 +25,7 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
     )
     {
       __private int gid = get_global_id(0);
-      __private int lid = get_local_id(0);
+      //__private int lid = get_local_id(0);
 
 
       /* PHP_MT_VARIABLES*/

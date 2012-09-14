@@ -6,16 +6,7 @@ import numpy as np
 import time
 from shared_gpu_kernels import gen_kernel
 
-SIZE = (2**18)
-DIVIDER = 1
-STATE_SIZE = (2**7)
-SIGNIFICANT_LENGTH = 1
-
-
-## PHP rand constants
-MT_N = 624
-M = 397
-## END PHP rand constants
+from config import SIGNIFICANT_LENGTH, SIZE, MT_N, M, STATE_SIZE
 
 MT_state_result = np.zeros((SIGNIFICANT_LENGTH, SIZE)).astype(np.uint32)
 
