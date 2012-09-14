@@ -32,9 +32,9 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
 
       __private unsigned int i;
       __private unsigned int s1;
-      __local unsigned int state[3*STATES_SIZE];
       __private unsigned int s2;
       __private unsigned int r2;
+      __private unsigned int x;
 
       /* END PHP_MT_VARIABLES*/
 
@@ -45,58 +45,21 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
 
       //*s++ = (seed_start + gid) & 0xffffffffU;
       s2 = (seed_start + gid) & 0xffffffffU;
-      r2 = s2;
-      c[gid] = s2;
 
-      for (; i < MT_N; ++i)
-      {
-        s2 = ( 1812433253U * ( r2 ^ (r2 >> 30) ) + i ) & 0xffffffffU;
-        r2 = s2;
-        c[ALL_SIZE*i + gid] = s2;
-      }
+      r2 = x = 1812433253U * (s2 ^ (s2 >> 30)) + 1;
+      for (i = 2; i <= M; i++)
+      x = 1812433253U * (x ^ (x >> 30)) + i;
+
+      x ^= ((s2 & 0x80000000U) | (r2 & 0x7fffffffU)) >> 1;
+
+      x ^= x >> 11;
+      x ^= (x << 7) & 0x9d2c5680U;
+      x ^= (x << 15) & 0xefc60000U;
+      x ^= x >> 18;
 
       /* END PHP_MT_INITIALIZE */
 
-
-      /* PHP_MT_RELOAD */
-
-      state[STATES_SIZE + lid] = c[gid];
-
-      for (i = 0; i < MT_N - M; ++i)
-      {
-        state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
-        state[STATES_SIZE   + lid] = c[(i+1) * ALL_SIZE + gid];
-        state[2*STATES_SIZE + lid] = c[(i+M) * ALL_SIZE + gid];
-        c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
-      }
-
-      for (i = MT_N - M; i < MT_N-1; ++i)
-      {
-        state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
-        state[STATES_SIZE   + lid] = c[(i+1) * ALL_SIZE + gid];
-        state[STATES_SIZE*2 + lid] = c[(i-(MT_N - M)) * ALL_SIZE + gid];
-        c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
-      }
-      state[                lid] = state[STATES_SIZE + lid];  // +++ p[0] = c[0][gid]
-      state[STATES_SIZE   + lid] = c[gid];
-      state[STATES_SIZE*2 + lid] = c[(i-(MT_N - M)) * ALL_SIZE + gid];
-      c[ALL_SIZE*i + gid] = twist(state[2*STATES_SIZE + lid], state[lid], state[STATES_SIZE + lid]);
-
-      /* END PHP_MT_RELOAD */
-
-
-      /* PHP_MT_RAND */
-
-      for (i = 0; i < RESULT_LEN; ++i)
-      {
-          s1 = c[ALL_SIZE*i + gid];
-
-          s1 ^= (s1 >> 11);
-          s1 ^= (s1 <<  7) & 0x9d2c5680U;
-          s1 ^= (s1 << 15) & 0xefc60000U;
-          s1 ^= (s1 >> 18);
-          res[ALL_SIZE*i + gid] = (long)(s1 >> 1);
-      }
+      res[gid] = (long)(x >> 1);
 
       /* END PHP_MT_RAND */
 

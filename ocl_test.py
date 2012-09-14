@@ -8,8 +8,8 @@ from shared_gpu_kernels import gen_kernel
 
 SIZE = (2**18)
 DIVIDER = 1
-STATE_SIZE = (2**8)
-SIGNIFICANT_LENGTH = 8
+STATE_SIZE = (2**7)
+SIGNIFICANT_LENGTH = 1
 
 
 ## PHP rand constants
@@ -35,9 +35,12 @@ zzz = time.time()
 instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(0), MT_state_buf, MT_state_res_buf)#, g_times_l=True)
 data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
-for i in xrange(10):
-    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE*0), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
-    data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
+with open('result.txt', 'ab') as f:
+    for i in xrange(2**31 / SIZE):
+        instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, MT_state_res_buf)#, g_times_l=True)
+        data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf).wait()
+        for row in (tmp for tmp in MT_state_result[0]):
+            f.write('{0}\n'.format(row))
 
 
 z2 = cl.enqueue_marker(queue_instruction)
