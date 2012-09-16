@@ -8,7 +8,7 @@ from shared_gpu_kernels import gen_kernel
 
 from config import SIGNIFICANT_LENGTH, SIZE, MT_N, M, STATE_SIZE, TEST_ITERATIONS
 
-MT_state_result = np.zeros((SIGNIFICANT_LENGTH, SIZE)).astype(np.uint32)
+MT_state_result = np.zeros((SIGNIFICANT_LENGTH, SIZE*16)).astype(np.uint32)
 
 ctx = cl.create_some_context()
 queue_instruction = cl.CommandQueue(ctx, properties=cl.command_queue_properties.PROFILING_ENABLE)
@@ -27,7 +27,7 @@ instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint3
 data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
 
 for i in xrange(TEST_ITERATIONS):#2**31 / SIZE):
-    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
+    instr_event = prg.mt_brute(queue_instruction, (SIZE, ), (STATE_SIZE, ), np.uint32(i*SIZE*16), MT_state_buf, MT_state_res_buf, wait_for=[data_event,])#, g_times_l=True)
     data_event = cl.enqueue_copy(queue_instruction, MT_state_result, MT_state_res_buf, wait_for=[instr_event,])
     data_event.wait()
         #for row in (tmp for tmp in MT_state_result[0]):
@@ -37,8 +37,8 @@ for i in xrange(TEST_ITERATIONS):#2**31 / SIZE):
 z2 = cl.enqueue_marker(queue_instruction)
 z2.wait()
 print '>>>', time.time() - zzz
-for row in MT_state_result[0]:
-    print row
+#for row in MT_state_result[0]:
+#    print row
 
 print "Start: {0} End: {1} Difference: {2}".format(z.profile.start,z2.profile.end, z2.profile.end - z.profile.start)
 

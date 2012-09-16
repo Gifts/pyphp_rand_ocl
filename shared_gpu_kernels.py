@@ -20,26 +20,26 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
 
 
     __kernel void mt_brute(         unsigned int seed_start,
-        __global unsigned int *c,
-        __global unsigned int *res
+        __global uint *c,
+        __global uint16 *res
     )
     {
-      __private int gid = get_global_id(0);
+      __private int gid = get_global_id(0) * 16;
       //__private int lid = get_local_id(0);
 
 
       /* PHP_MT_VARIABLES*/
 
       __private unsigned int i;
-      __private unsigned int s2, r2;
-      __private unsigned int x;
+      __private uint16 s2, r2;
+      __private uint16 x;
 
       /* END PHP_MT_VARIABLES*/
 
 
       /* PHP_MT_INITIALIZE */
-
-      s2 = (seed_start + gid) & 0xffffffffU;
+      i = seed_start + gid;
+      s2 = (uint16)((i), (i + 1), (i + 2), (i + 3), (i + 4), (i + 5), (i + 6), (i + 7), (i + 8), (i + 9), (i + 10), (i + 11), (i + 12), (i + 13), (i + 14), (i + 15));
 
       r2 = x = 1812433253U * (s2 ^ (s2 >> 30)) + 1;
       for (i = 2; i <= M; i++)
@@ -54,8 +54,7 @@ def gen_kernel(MT_N, STATE_SIZE, M, SIZE, SIGNIFICANT_LENGTH):
       x ^= x >> 18;
 
       /* END PHP_MT_INITIALIZE */
-
-      res[gid] = (long)(x >> 1);
+      res[get_global_id(0)] = x>>1;
 
       /* END PHP_MT_RAND */
 
