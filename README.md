@@ -5,19 +5,23 @@ Installation
 
 Numpy and one of Pycuda or pyopencl should me installed to run this.
 
-<code>
-easy_install numpy pyopencl<br>
-OR <br>
+```
+easy_install numpy pyopencl
+```
+OR 
+```
 pip install numpy pyopencl<br>
-</code>
+```
 
 For pycuda you should run
 
-<code>
+```
 easy_install numpy pycuda<br>
-OR <br>
+```
+OR 
+```
 pip install numpy pycuda<br>
-</code>
+```
 
 For any opencl compatible device you should also install opencl package for your device (AMD/NVIDIA/Intel/etc.)
 
@@ -34,18 +38,19 @@ If you would run it from shell - there would be some info regarding this
 Speed tests
 ===========
 
-<code>$ grep SIZE config.py<br>
-SIZE = 16384<br>
-$ ./start_ocl.sh<br>
-$ tail -n 2 opencl_profile_0.log<br>
-method=[ mt_brute ] gputime=[ 72.640 ] cputime=[ 4.000 ] occupancy=[ 0.667 ] <br>
-method=[ memcpyDtoHasync ] gputime=[ 12.512 ] cputime=[ 8.000 ] <br>
-<br>
-$ ./start_cuda.sh<br>
-$ tail -n 2 cuda_profile_0.log<br>
-method=[ mt_brute ] gputime=[ 68.928 ] cputime=[ 6.000 ] occupancy=[ 0.667 ] <br>
-method=[ memcpyDtoH ] gputime=[ 10.720 ] cputime=[ 88.000 ] <br>
-</code>
+```bash
+$ grep SIZE config.py
+SIZE = 16384
+$ ./start_ocl.sh
+$ tail -n 2 opencl_profile_0.log
+method=[ mt_brute ] gputime=[ 72.640 ] cputime=[ 4.000 ] occupancy=[ 0.667 ] 
+method=[ memcpyDtoHasync ] gputime=[ 12.512 ] cputime=[ 8.000 ] 
+
+$ ./start_cuda.sh
+$ tail -n 2 cuda_profile_0.log
+method=[ mt_brute ] gputime=[ 68.928 ] cputime=[ 6.000 ] occupancy=[ 0.667 ]
+method=[ memcpyDtoH ] gputime=[ 10.720 ] cputime=[ 88.000 ]
+```
 
 Results
 =======
