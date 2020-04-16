@@ -10,17 +10,17 @@ easy_install numpy pyopencl
 ```
 OR 
 ```
-pip install numpy pyopencl<br>
+pip install numpy pyopencl
 ```
 
 For pycuda you should run
 
 ```
-easy_install numpy pycuda<br>
+easy_install numpy pycuda
 ```
 OR 
 ```
-pip install numpy pycuda<br>
+pip install numpy pycuda
 ```
 
 For any opencl compatible device you should also install opencl package for your device (AMD/NVIDIA/Intel/etc.)
